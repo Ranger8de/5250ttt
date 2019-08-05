@@ -1,19 +1,30 @@
 **free
-// zuerst wird das 'Hauptmodul' ttt generiert
+// Zuerst muss das Binderverzeichnis erstellt werde
+// <code>
+// CRTBNDDIR BNDDIR(PRSORGA1/TTTSRVPGM)
+// </code>
+// dann muss das SRV-Programm dem Binderverzeichnis hinzugef}ugt werden
+// <code>
+// ADDBNDDIRE BNDDIR(PRSORGA1/TTTSRVPGM) OBJ((PRSORGA1/TTT2_SRV *SRVPGM))
+// </code>
+// zuerst wird das 'Hauptmodul' ttt2 generiert: ACHTUNG OBJTYPE
 //  <CODE>
-// crtrpgmod module(prsorga1/ttt) dbgview(*source) srcfile(prsorga1/qrpglesrc)
+// CRTSQLRPGI OBJ(PRSORGA1/TTT2) SRCFILE(PRSORGA1/QRPGLESRC)
+// SRCMBR(TTT2) OBJTYPE(*MODULE) OPTION(*EVENTF) REPLACE(*YES)
+// DBGVIEW(*SOURCE)
 //  </CODE>
 
 // dann wird das Programm ttt erstellt und das Service-Programm ttt_init eingebunden
 //  <CODE>
-// CRTPGM PGM(PRSORGA1/TTT) BNDSRVPGM(TTT_INIT) ACTGRP(*NEW)
+// CRTPGM PGM(PRSORGA1/TTT2) BNDSRVPGM(TTT2_SRV) ACTGRP(*NEW)
 //  </CODE>
 
 // #Region Control-Options
     CTL-OPT MAIN(main_pr);        // Die Hauptprozedur wird mit main_pr festgelegt
-    CTL-OPT DFTACTGRP(*NO);       // es handelt sich um ein ILE Programm
+    //CTL-OPT DFTACTGRP(*NO);       // es handelt sich um ein ILE Programm
     //CTL-OPT OPTION(*SRCSTMT);     // Die Zeilennummern werden im Format der Source zurückgegeben
     CTL-OPT DATFMT(*DMY);         // Datum wird im Tag-Monat-Jahr-Format angegeben
+   // ctl-opt bnddir('TTTSRVPGM');    // Verweis auf das Binderverzeichnis
 // #EndRegion Control-Options
 
 // #Region External Procedure Prototypes
@@ -26,9 +37,103 @@
     // @param  Länge der Zeichenkete des Commands
     ///
     DCL-PR QCMDEXC extpgm;
-        Cmd char(250) options(*varsize) const;
+        Cmd char(250) const;
         Length packed(15:5) const ;
     END-PR;
+
+///
+// Title MyQCmdExc vereinfachung von QCMDEXC
+///
+ DCL-PR MyQCmdExc ind ;
+  cmdString char(256);
+ END-PR;
+
+
+///
+// Ermittelt die aktuelle Nummer des Jobs
+///
+DCL-PR GetJobNo Zoned(6) ;
+
+END-PR;
+
+///
+// Erstellt eine DataQ mit angegebenen Parametern
+///
+DCL-PR CreateDataQ Ind;
+    DatQLib              char(10);
+    DatQName             char(10);
+    MaxDataQLength       zoned(5);
+    User                 char(10)      OPTIONS(*NOPASS);
+END-PR;
+
+///
+// Title DropDataQ
+// Description L¦scht die angegeben DataQ
+///
+DCL-PR DropDataQ Ind;
+    DatQLib              char(10);
+    DatQName             char(10);
+END-PR;
+
+///
+// Title Board_CheckWinner
+// Description Pr}ft, ob ein Soeg vorliegt
+// $param Turn = der zu pr}fenden Spieler
+// $param Grid = das zu }berpr}fende Spielfeld
+///
+DCL-PR Board_CheckWinner ind;
+    Turn                 Char(2)        Const;
+    Grid                 Char(2) Dim(9) Const;
+END-PR;
+
+///
+//
+///
+DCL-PR CheckIfDataqExists ind;
+   DatQLib           char(10);
+   DatQName          char(10);
+END-PR;
+
+///
+//  Setzt das Spielfeld auf die Ausgangswerte zur}ck
+///
+DCL-PR Board_Reset Char(2) Dim(9);
+    Grid Char(2) Dim(9);
+END-PR;
+
+///
+//
+///
+DCL-PR Game_Turn Char(2);
+    Turn Char(2);
+END-PR;
+
+///
+// Gibt das Zeichen f}r Spieler X zur}ck
+///
+DCL-PR Get_X Char(2);
+END-PR;
+
+///
+// Gibt das Zeichen f}r Spieler O zur}ck
+///
+DCL-PR Get_O Char(2);
+END-PR;
+
+///
+// Ermittelt einen Zufallszug f}r die Machine
+///
+DCL-PR SetAiMove Char(2) Dim(9);
+    Grid Char(2) Dim(9);
+    Player Char(2) const;
+END-PR;
+
+///
+// Speichert den aktuellen Spielstand
+///
+DCL-PR SaveGameResult;
+  ttt2 likeds(ttt2);
+END-PR;
 
     ///
     // Title
@@ -80,8 +185,8 @@
 
     DCL-S maxDataQLength zoned(5) inz(64512);
 
-    DCL-S DatQLib     VarChar(10);
-    DCL-S DatQName    VarChar(10);
+    DCL-S DatQLib     Char(10);
+    DCL-S DatQName    Char(10);
 
     // Anzahl Gesamt-Siege für X und O
     DCL-S namePlyrX   Char(15);
@@ -134,6 +239,10 @@
         JobNo         Zoned(6) Pos(264);
     END-DS;
 
+    // TTT200 Spielergebnisse
+    DCL-DS ttt2 EXT INZ(*EXTDFT) EXTNAME('TTT200');
+    END-DS;
+
     // Definition der Displayfile
     DCL-F TTTDSP      Workstn;
 // #EndRegion Global Variables
@@ -147,8 +256,11 @@
     // stellt die Haupteinstiegs-Prozedur dar
     ///
     DCL-PROC Main_pr;
+
+      DCL-DS ttt20r likeds(ttt2);
+
         Init_Game();
-        Board_Reset();
+        gGrid = Board_Reset(gGrid);
         Dow (gExit = *Off);
             RefreshScreen();
 
@@ -159,7 +271,7 @@
             If (gTURN <> iam);
                 IF (gAIT);
                     Text = 'wait for AI is moving...';
-                 SetAiMove();
+                 SetAiMove(gGrid:gTurn);
                  ELSE;
                      Text = 'wait for Opponent is moving...';
                      // Warte auf DTAQ
@@ -170,13 +282,37 @@
                 Board_Turn(gTurn:gAIT);
             ENDIF;
 
-
-
             Board_GridUpdate();
-            Board_CheckWinner(gTurn);
+            WRITE MAIN;
+
+            if (Board_CheckWinner(gTurn:gGrid));
+
+                clear ttt20r ;
+                ttt20r.TTGAME = 'TTT';
+                ttt20r.TTPlr1 = namePlyrX;
+                ttt20r.TTPlr2 = namePlyrO;
+
+                If (gTurn = X);
+                    totalWinX = totalWinX + 1;
+                     ttt20r.TTPnt1 = 1;
+
+                Else;
+                    totalWinO = totalWinO + 1;
+                    ttt20r.TTPnt2 = 1;
+                ENDIF;
+
+                SaveGameResult(ttt20r);
+                 // Sieger-Nachricht festlegen
+                WINTEXT = gTurn + ' is the winner.';
+
+                // Nachricht einblenen & Spielplan zurücksetzen
+                EXFMT WIN;
+                Board_Reset(gGrid);
+            ENDIF;
+
             Board_CheckNoWin();
 
-            Game_Turn();         //Switch turn
+            gTurn = Game_Turn(gTurn);         //Switch turn
 
         ENDDO;
 
@@ -204,6 +340,8 @@
         NAME1 = namePlyrX;
         NAME2 = namePlyrO;
 
+        Board_GridUpdate();
+
     END-PROC RefreshScreen;
 
     ///
@@ -213,7 +351,7 @@
     ///
     DCL-PROC EndGame;
         // Kommunikations-Datenbereich entfernen
-        DropDataQ();
+        DropDataQ(DatQLib:DatQName);
 
         // Zugriffe schiließen
         // Close TTTDSP;
@@ -239,9 +377,9 @@
         DatQName = 'TTT' + %trim(%char(GameId));
 
         // ein x ist blau
-        X = x'3A' + 'X';
+        X = Get_X();
         // ein O ist rot
-        O = x'28' + 'O';
+        O = Get_O();
 
         // initialer Spielstand lautet 0:0
         totalWinX = 0;
@@ -266,6 +404,7 @@
     DCL-PROC Init_Game_1Player;
         // Ein Spieler spielt immer gegen die Machine
         gAIT = *ON;
+        iam = X;
         namePlyrO = GetMachineName();
     END-PROC Init_Game_1Player;
 
@@ -299,7 +438,7 @@
             Select;
                 // F1 gedrückt, DataQ erstellen und warten
                 When (*In01);
-                    CreateDataQ();
+                    CreateDataQ(DatQLib:DatQName:maxDataQLength);
                     WaitForPlayerToJoin();
                     gameModChoosen = *ON;
                     iam = X;
@@ -396,7 +535,8 @@
                         iter;
                     Endmon;
 
-                 IF (CheckIfDataqExists());
+                 IF (CheckIfDataqExists(DatQLib:DatQName));
+
                     validId = *ON;
                  ELSE;
 
@@ -430,27 +570,7 @@
     return ReturnValue;
     END-PROC IsNumeric;
 
-    ///
-    // <summary>
-    // Prüft, ob die erforderliche DataQueue vorhanden ist
-    // </summary>
-    ///
-    DCL-PROC CheckIfDataqExists;
-        DCL-PI *N ind;
-        END-PI;
 
-        dcl-s cmdString char(256);
-        // CHKOBJ OBJ(*LIB/*OBJ) OBJTYPE(*DTAQ)
-        cmdString = 'CHKOBJ OBJ(' + %trim(DatQLib) + '/' + %trim(DatQName) +
-                    ') OBJTYPE(*DTAQ)' ;
-
-        Monitor;
-            callp MyQCmdExc(cmdString);
-            return *On;
-        On-ERROR;
-            return *OFF;
-        EndMon;
-    END-PROC CheckIfDataqExists;
 
     ///
     // <summary>
@@ -499,25 +619,7 @@
 
     END-PROC WaitForPlayerToJoin;
 
-    ///
-    // <summary>
-    // Schreibt einen Test-Eintrag in die Dataqueue
-    // </summary>
-    ///
-    DCL-PROC WriteTestDataQ;
-         //Todo SChreibe DTAq
-         dcl-s dataIn char(100);
-         dcl-s dataOut char(100);
 
-         dataIn = 'Hallo Welt]';
-
-         callp GetDataQ(%trim(DatQName):%trim(DatQLib):maxDataQLength:dataOut:3);
-
-         callp SendDataQ(%trim(DatQName):%trim(DatQLib):maxDataQLength:dataIn);
-
-         callp GetDataQ(%trim(DatQName):%trim(DatQLib):maxDataQLength:dataOut:3);
-
-    END-PROC WriteTestDataQ;
 
     ///
     // <summary>
@@ -551,158 +653,10 @@
                     Init_Game_2Player();
                 OTHER;
                     // Enter: hier muss geloopt werden!
-                    //dsply 'etwas anderes als F1 oder F2 wurde gedrückt!';
             ENDSL;
         ENDDO;
 
     END-PROC SetGameModus;
-
-    ///
-    // <summary>
-    // Erstellt einen Datenbereich, indem ein zweiter Spieler spielen kann
-    // </summary>
-    // <returns>true oder false, ob die DTAQ erstellt werden konnte</returns>
-    ///
-    DCL-PROC CreateDataQ;
-        DCL-PI *N Ind;
-        END-PI;
-        // Im Interface soll die Zufallszahl übergeben werden
-        dcl-s cmdString char(256);
-
-        cmdString = 'CRTDTAQ DTAQ(' + %trim(DatQLib) + '/' + %trim(DatQName) +
-                    ') MAXLEN(' + %char(maxDataQLength) +
-                    ') TEXT(''TTT DtaQ zum DatenAustausch'')';
-
-        Monitor;
-            callp MyQCmdExc(cmdString);
-            return *On;
-        On-ERROR;
-            return *OFF;
-        EndMon;
-
-    END-PROC CreateDataQ;
-
-    ///
-    // Title
-    // DropDataQ
-    // Description
-    // Erstellt einen Datenbereich, indem ein zweiter Spieler spielen kann
-    // @return
-    // <code>true</code> oder <code>false</code>,
-    // ob die DTAQ gelöscht werden konnte</returns>
-    ///
-    DCL-PROC DropDataQ;
-        DCL-PI *N Ind;
-        END-PI;
-
-        dcl-s cmdString char(256);
-
-        cmdString = 'DLTDTAQ DTAQ(*CURLIB/'+ %trim(DatQName) + ')' ;
-
-        Monitor;
-            callp MyQCmdExc(cmdString);
-            return *On;
-        On-ERROR;
-            return *OFF;
-        EndMon;
-
-    END-PROC DropDataQ;
-
-    ///
-    // <summary>
-    // Ermittelt ein Zufallszahl
-    // </summary>
-    ///
-    DCL-PROC GetRandomInt;
-        DCL-Pi *N Zoned(6)
-        End-Pi;
-
-         DCL-S randInt Zoned(6) INZ(1);
-
-         EXEC SQL SELECT int(CEILING(RAND()* 278564))
-                    into :randInt FROM sysibm/sysdummy1;
-
-         Return randInt;
-     END-PROC GetRandomInt;
-
-    ///
-    // Title
-    // GetJobNo
-    // Description
-    // Ermittelt die aktuelle JobNummer
-    // @return
-    // Gibt die Nummer des aktuellen Jobs zurück
-    ///
-    DCL-PROC GetJobNo;
-        DCL-Pi *N Zoned(6)
-        End-Pi;
-
-         DCL-S JobNo Zoned(6) INZ(0);
-
-         JobNo = pgm_stat.JobNo;
-
-         Return JobNo;
-     END-PROC GetJobNo;
-
-    ///
-    // Title
-    // MyQCmdExc
-    // Description
-    // Ruft das QCMDEXC mit den richtigen Parametern auf
-    // @return
-    // <code>true</code> oder <code>false</code>
-    // je nachdem, ob der Aufruf erfolgreich war
-    ///
-    DCL-PROC MyQCmdExc;
-        DCL-Pi *N ind ;
-            cmdString char(256);
-        End-Pi;
-
-        Monitor;
-            callp QCMDEXC(%trim(cmdString):%len(%trim(cmdString)));
-            return *On;
-        On-ERROR;
-            return *OFF;
-        EndMon;
-    END-PROC MyQCmdExc;
-
-    ///
-    // <summary>
-    // Eingabe des jeweiligen Spielers
-    // </summary>
-    ///
-    Dcl-Proc Input_Names;
-        Dcl-Pi *N EXTPROC(*DCLCASE);
-            pPlayer Char(2); // Player
-            pPlayerName Char(15); // Name
-        End-Pi;
-
-        clear PLYRNAM;
-        PLYRTXT = 'Plz input Player ' + %SUBST(pPlayer:2:1) + ' name:';
-
-        EXFMT NAME;
-        pPlayerName = PLYRNAM;
-
-    END-PROC Input_Names;
-
-    ///
-    // <summary>
-    // Brett neu aufbauen
-    // </summary>
-    ///
-    Dcl-Proc Board_Reset;
-        gGrid(1) = '1';
-        gGrid(2) = '2';
-        gGrid(3) = '3';
-        gGrid(4) = '4';
-        gGrid(5) = '5';
-        gGrid(6) = '6';
-        gGrid(7) = '7';
-        gGrid(8) = '8';
-        gGrid(9) = '9';
-
-        Board_GridUpdate();
-    END-PROC Board_Reset;
 
     ///
     // <summary>
@@ -720,29 +674,9 @@
         P8 = gGrid(8);
         P9 = gGrid(9);
 
-        POS = ' ';
+
 
     END-PROC Board_GridUpdate;
-
-    ///
-    // <summary>
-    // Spieler für Zug ermitteln
-    // </summary>
-    ///
-    Dcl-Proc Game_Turn; //Current turn
-        Dcl-Pi *N Char(2)
-        End-Pi;
-
-        // Wenn der aktuelle Spieler X ist, wird O gesetzt
-        If (gTurn = X);
-            gTurn = O;
-        Else;
-            gTurn = X;
-        ENDIF;
-
-        Return gTurn;
-
-    END-PROC Game_Turn;
 
     ///
     // Title
@@ -756,14 +690,14 @@
     Dcl-Proc Board_Turn; //Player move
 
         Dcl-Pi Board_Turn;
-            pTurn Char(2) Const;
-            pAI   Ind     Const;
+            pTurn         Char(2) Const;
+            pAI           Ind     Const;
         END-PI;
 
-         DCL-DS tempDs likeds(GameStructure) INZ;
-        Dcl-S lExit  Ind;
-        Dcl-S lValid Ind;
-        Dcl-S lIndex Int(3);
+        DCL-DS tempDs likeds(GameStructure) INZ;
+        DCL-S  lExit      Ind;
+        DCL-S  lValid     Ind;
+        DCL-S  lIndex     Int(3);
 
 
         lExit = *Off;
@@ -779,7 +713,7 @@
                        gExit = *On;
                        lExit = *On;
                    When (*In07); //F7
-                        JoinExternalGame();
+
                      Other; //Enter
                 Monitor;
                     lIndex = %Int(POS);
@@ -801,6 +735,9 @@
                 ENDSL;
             Enddo;
 
+            // Eingabefeld aufr{umen
+            POS = ' ';
+
             // Sende GameStructure an Dataq, sofern kein AI-Gegner
             if (gAIT = *OFF);
                  tempDs.g_id = GameId;
@@ -811,119 +748,6 @@
                  SendDataQ(DatQName:DatQLib:maxDataQLength:tempDs);
           ENDIF;
     END-PROC Board_Turn;
-
-    ///
-    // <summary>
-    // Anhand einer Spiel-ID soll ein entferntes Spiel gespielt werden.
-    // </summary>
-    ///
-    DCL-PROC JoinExternalGame;
-
-    END-PROC JoinExternalGame;
-
-    // <summary>
-    // Setzt einen Spielzug
-    // </summary>
-    DCL-PROC SetAiMove;
-        // ToDo: Algorhythmus zum setzen eines AI Zugs implementieren
-        Dcl-S lIndex Int(3);
-        Dcl-S GetEmptyField Ind Inz(*ON);
-
-        // Planlos über das Feld latschen und das nächste freie ermitteln
-        DOW (GetEmptyField);
-            EXEC SQL SELECT int(CEILING(RAND()* 9))
-                    into :lIndex FROM sysibm/sysdummy1;
-
-            // Ist das Feld leer, übernehmen wir es
-            if (gGrid(lIndex) = %char(lIndex));
-                gGrid(lIndex) = O;
-
-                GetEmptyField = *OFF;
-            EndIf;
-
-        ENDDO;
-        Board_GridUpdate();
-        Write Main;
-
-    END-PROC SetAiMove;
-
-    // <summary>
-    // Ermittle Gewinner
-    // </summary>
-    DCL-PROC Board_CheckWinner;
-          // Übergibt den aktuellen Spieler
-        DCL-PI *N;
-            pTurn Char(2) Const;
-        END-PI;
-
-        // definiert ob der aktueller Spieler drei Elemente in einer Reihe hält
-        Dcl-S lWinner Ind Inz(*Off);
-
-        // Checke erste Reihe
-        If (gGrid(1) = pTurn AND
-            gGrid(2) = pTurn AND
-            gGrid(3) = pTurn);
-            lWinner = *On;
-
-        // checke zweite Reihe
-        ELSEIF (gGrid(4) = pTurn AND
-                gGrid(5) = pTurn AND
-                gGrid(6) = pTurn);
-            lWinner = *On;
-
-        // Checke dritte Reihe
-        ELSEIF (gGrid(7) = pTurn AND
-                gGrid(8) = pTurn AND
-                gGrid(9) = pTurn);
-            lWinner = *On;
-
-         // Checke erste Spalte
-         ELSEIF (gGrid(1) = pTurn AND
-                 gGrid(4) = pTurn AND
-                 gGrid(7) = pTurn);
-            lWinner = *On;
-
-        // Checke zweite Spalte
-        ELSEIF (gGrid(2) = pTurn AND
-                gGrid(5) = pTurn AND
-                gGrid(8) = pTurn);
-            lWinner = *On;
-
-        // Checke dritte Spalte
-        ELSEIF (gGrid(3) = pTurn AND
-                gGrid(6) = pTurn AND
-                gGrid(9) = pTurn);
-            lWinner = *On;
-
-        // Checke erste Diagonale
-        ELSEIF (gGrid(1) = pTurn AND
-                gGrid(5) = pTurn AND
-                gGrid(9) = pTurn);
-            lWinner = *On;
-
-        // Checke zweite Diagonale
-        ELSEIF (gGrid(3) = pTurn AND
-                gGrid(5) = pTurn AND
-                gGrid(7) = pTurn);
-            lWinner = *On;
-        ENDIF;
-
-        // Prüfen, ob ein Sie vorliegt
-        If (lWinner = *On);
-            // Sieger-Nachricht festlegen
-            WINTEXT = pTurn + ' is the winner.';
-
-            If (gTurn = X);
-                totalWinX = totalWinX + 1;
-            Else;
-                totalWinO = totalWinO + 1;
-            ENDIF;
-
-            // Nachricht einblenen & Spielplan zurücksetzen
-            EXFMT WIN;
-            Board_Reset();
-        ENDIF;
-    END-PROC Board_CheckWinner;
 
     //<summary>
     // Prüfe auf Kein Sieg
@@ -942,7 +766,7 @@
         ENDFOR;
 
         If (lReset);
-               Board_Reset();
+              gGrid = Board_Reset(gGrid);
         ENDIF;
     END-PROC Board_CheckNoWin;
 

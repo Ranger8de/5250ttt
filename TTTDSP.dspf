@@ -96,8 +96,8 @@
      A                                      COLOR(BLU)
 
      A          R WIN                       WINDOW(16 13 5 43)
-     A                                      WDWBORDER((*COLOR GRN) +
-     A                                       (*DSPATR HI))
+     A                                      WDWTITLE((*TEXT 'Winner') *TOP)
+     A                                      WDWBORDER((*COLOR GRN) (*DSPATR HI))
      A            WINTEXT       30   O  3 10
 
      A          R NAME                      WINDOW(6 13 9 43)
@@ -111,6 +111,7 @@
      A                                      CF01(01 '1 Player')
      A                                      CF02(02 '2 Player')
      A                                      WINDOW(6 20 9 30)
+     A                                      WDWTITLE((*TEXT 'Chooser'))
      A                                  1  1'Please choose your game mod:'
      A                                      COLOR(WHT)
 
@@ -130,6 +131,7 @@
      A                                      INVITE
      A                                      WINDOW(6 20 9 30)
      A                                      WDWBORDER((*COLOR BLU))
+     A                                      WDWTITLE((*TEXT 'Game-ID'))
 
      A            GIDTEXT       25   O  1  1
      A                                      COLOR(WHT)
