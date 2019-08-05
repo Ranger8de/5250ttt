@@ -1,57 +1,140 @@
-     A          R MAIN                      CA03(03)
-     A                                  5 21'------------------------------'
+     A          R MAIN                      CF03(03 'Exit Game')
+                                            CF07(07 'Join a Game')
+
+
+
+     A                                  2  2'TTT       '
      A                                      COLOR(WHT)
-     A                                 15 21'------------------------------'
+     A                                  2 13'Simple TicTacToe Example'
      A                                      COLOR(WHT)
-     A                                 10 22' '
+     A            TDATE         10   O  2 70
      A                                      COLOR(WHT)
-     A                                  6 20'|'
+     A            TTIME         10   O  3 70
      A                                      COLOR(WHT)
-     A                                  7 20'|'
+
+     A                                  4 17'X='
+     A                                      COLOR(TRQ)
+     A            NAME1         15   O  4 20
+     A                                      COLOR(TRQ)
+     A            TWINX          2   O  4 37
+     A                                      COLOR(TRQ)
+
+     A                                  4 40':'
      A                                      COLOR(WHT)
-     A                                  8 20'|'
+
+     A            TWINO          2   O  4 42
+     A                                      COLOR(RED)
+     A                                  4 44'O='
+     A                                      COLOR(RED)
+     A            NAME2         15   O  4 47
+     A                                      COLOR(RED)
+
+     A                                  9 21'---------+---------+----------'
      A                                      COLOR(WHT)
-     A                                  9 20'|'
+     A                                 13 21'---------+---------+----------'
      A                                      COLOR(WHT)
-     A                                 10 20'|'
+     A                                  6 30':'
      A                                      COLOR(WHT)
-     A                                 11 20'|'
+     A                                  7 30':'
      A                                      COLOR(WHT)
-     A                                 12 20'|'
+     A                                  8 30':'
      A                                      COLOR(WHT)
-     A                                 13 20'|'
+     A                                  9 30':'
      A                                      COLOR(WHT)
-     A                                  6 51'|'
+     A                                 10 30':'
      A                                      COLOR(WHT)
-     A                                  7 51'|'
+     A                                 11 30':'
      A                                      COLOR(WHT)
-     A                                  8 51'|'
+     A                                 12 30':'
      A                                      COLOR(WHT)
-     A                                  9 51'|'
+     A                                 13 30':'
      A                                      COLOR(WHT)
-     A                                 10 51'|'
+     A                                 14 30':'
      A                                      COLOR(WHT)
-     A                                 11 51'|'
+     A                                 15 30':'
      A                                      COLOR(WHT)
-     A                                 12 51'|'
+     A                                 16 30':'
      A                                      COLOR(WHT)
-     A                                 13 51'|'
+     A                                  6 40':'
+     A                                      COLOR(WHT)
+     A                                  7 40':'
+     A                                      COLOR(WHT)
+     A                                  8 40':'
+     A                                      COLOR(WHT)
+     A                                  9 40':'
+     A                                      COLOR(WHT)
+     A                                 10 40':'
+     A                                      COLOR(WHT)
+     A                                 11 40':'
+     A                                      COLOR(WHT)
+     A                                 12 40':'
+     A                                      COLOR(WHT)
+     A                                 13 40':'
+     A                                      COLOR(WHT)
+     A                                 14 40':'
+     A                                      COLOR(WHT)
+     A                                 15 40':'
+     A                                      COLOR(WHT)
+     A                                 16 40':'
      A                                      COLOR(WHT)
      A            P7             2   O  7 25
      A            P8             2      7 35
      A            P9             2      7 45
-     A            P1             2     13 25
-     A            P2             2     13 35
-     A            P3             2     13 45
-     A            P4             2     10 25
-     A            P5             2     10 35
-     A            P6             2     10 45
-     A                                 14 20'|'
+     A            P1             2     15 25
+     A            P2             2     15 35
+     A            P3             2     15 45
+     A            P4             2     11 25
+     A            P5             2     11 35
+     A            P6             2     11 45
+
+
+     A            TEXT          30   O 24  2COLOR(WHT)
+     A            POS            1   B 18 42
+     A                                 18 31'Your move:'
+
+     A                                 22  2'F3=Exit'
+     A                                      COLOR(BLU)
+
+     A          R WIN                       WINDOW(16 13 5 43)
+     A                                      WDWBORDER((*COLOR GRN) +
+     A                                       (*DSPATR HI))
+     A            WINTEXT       30   O  3 10
+
+     A          R NAME                      WINDOW(6 13 9 43)
+     A                                      WDWBORDER((*COLOR YLW) +
+     A                                       (*DSPATR RI))
+     A            PLYRTXT       30   O  2  2
+     A            PLYRNAM       15   B  4  7
+
+
+     A          R CHOOSER
+     A                                      CF01(01 '1 Player')
+     A                                      CF02(02 '2 Player')
+     A                                      WINDOW(6 20 9 30)
+     A                                  1  1'Please choose your game mod:'
      A                                      COLOR(WHT)
-     A                                 14 51'|'
+
+
+     A            CH_ROW1       25   O  3  2
+     A            CH_ROW2       25   O  4  2
+     A            CH_ROW3       25   O  5  2
+     A            CH_ROW4       25   O  6  2
+     A            CH_ROW5       25   O  7  2
+
+     A            CH_ROW6       25   O  8  2
+     A                                      COLOR(BLU)
+
+
+     A          R INPID
+     A                                      CF03(03 'Cancel')
+     A                                      INVITE
+     A                                      WINDOW(6 20 9 30)
+     A                                      WDWBORDER((*COLOR BLU))
+
+     A            GIDTEXT       25   O  1  1
      A                                      COLOR(WHT)
-     A            TEXT          30   O 17 21COLOR(WHT)
-     A            POS            1   B 19 42
-     A                                 19 31'Your move:'
-     A          R WIN                       WINDOW(6 13 9 43)
-     A            WINTEXT       30   O  4  7
+
+     A                                  3  2'ID: '
+     A            GID            6   B  3  7
+     A                               O  8  2'F3=Cancel'
+     A                                      COLOR(BLU)
